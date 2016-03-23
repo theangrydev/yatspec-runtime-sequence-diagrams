@@ -112,7 +112,11 @@
                     <showWeaveInfo>true</showWeaveInfo>
                     <outxml>true</outxml>
                     <xmlConfigured>${project.basedir}/src/test/resources/aspectj/aspects.xml</xmlConfigured>
-                    <sources/>
+                    <sources>
+                        <source>
+                            <basedir>src/test/java </basedir>
+                        </source>
+                    </sources>
                     <forceAjcCompile>true</forceAjcCompile>
                     <weaveDirectories>
                         <weaveDirectory>${project.build.directory}/test-classes</weaveDirectory>
