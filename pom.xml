@@ -114,7 +114,7 @@
                     <xmlConfigured>${project.basedir}/src/test/resources/aspectj/aspects.xml</xmlConfigured>
                     <sources>
                         <source>
-                            <basedir>src/test/java </basedir>
+                            <basedir>src/test/java</basedir>
                         </source>
                     </sources>
                     <forceAjcCompile>true</forceAjcCompile>
