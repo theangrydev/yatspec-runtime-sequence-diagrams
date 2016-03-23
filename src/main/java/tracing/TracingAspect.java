@@ -1,11 +1,8 @@
-package io.github.theangrydev.yatspecruntimesequencediagrams.tracing;
+package tracing;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.SourceLocation;
 
 import java.util.ArrayList;
@@ -14,12 +11,17 @@ import java.util.Collections;
 import java.util.List;
 
 @Aspect
+@SuppressWarnings("unused")
 public class TracingAspect {
-    private boolean verbose = false;
+    private boolean verbose = true;
 
     private static List<TracingEvent> messages = new ArrayList<>();
 
-    @Before("within(acceptance.realworld.*) && call(* acceptance.realworld.*.*(..))")
+
+    @Pointcut("execution(public * acceptance.realworld..*.*(..))")
+    public void callFromDomainToDomain() {}
+
+    @Before("callFromDomainToDomain()")
     public void before(final JoinPoint thisJoinPoint) {
         print(thisJoinPoint);
         traceEntry(getThis(thisJoinPoint), getTarget(thisJoinPoint), thisJoinPoint.getSignature(), thisJoinPoint.getSourceLocation(), thisJoinPoint.getArgs());
@@ -33,7 +35,7 @@ public class TracingAspect {
         }
     }
 
-    @AfterReturning(pointcut = "within(acceptance.realworld.*) && call(* acceptance.realworld.*.*(..))", returning = "o")
+    @AfterReturning(pointcut = "callFromDomainToDomain()", returning = "o")
     public void after(final JoinPoint thisJoinPoint, Object o) {
         traceExit(getThis(thisJoinPoint), getTarget(thisJoinPoint), thisJoinPoint.getSignature(), thisJoinPoint.getSourceLocation(), o);
     }
@@ -46,7 +48,7 @@ public class TracingAspect {
         }
     }
 
-    @AfterThrowing(pointcut = "within(acceptance.realworld.*) && call(* acceptance.realworld.*.*(..))", throwing = "t")
+    @AfterThrowing(pointcut = "callFromDomainToDomain()", throwing = "t")
     public void afterThrowing(final JoinPoint thisJoinPoint, Throwable t) {
         traceThrowing(getThis(thisJoinPoint), getTarget(thisJoinPoint), thisJoinPoint.getSignature(), thisJoinPoint.getSourceLocation(), t);
     }

@@ -1,4 +1,4 @@
-package io.github.theangrydev.yatspecruntimesequencediagrams.tracing;
+package tracing;
 
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.SourceLocation;

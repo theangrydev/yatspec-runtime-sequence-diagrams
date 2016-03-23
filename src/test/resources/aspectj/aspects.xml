@@ -2,6 +2,6 @@
 <!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
 <aspectj>
     <aspects>
-        <aspect name="io.github.theangrydev.yatspecruntimesequencediagrams.tracing.TracingAspect"/>
+        <aspect name="tracing.TracingAspect"/>
     </aspects>
 </aspectj>
