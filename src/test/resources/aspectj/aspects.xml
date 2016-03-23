@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+    <aspects>
+        <aspect name="io.github.theangrydev.yatspecruntimesequencediagrams.tracing.TracingAspect"/>
+    </aspects>
+</aspectj>
