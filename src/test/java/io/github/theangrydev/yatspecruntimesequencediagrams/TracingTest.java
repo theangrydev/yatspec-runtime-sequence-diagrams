@@ -49,7 +49,7 @@ public class TracingTest extends TestState implements WithCustomResultListeners 
 
     @Test
     public void example() {
-        new Application(new Wiring()).start();
+        new Application(new Wiring("1234")).start();
         System.out.println("messages = " + TracingAspect.getMessages());
     }
 

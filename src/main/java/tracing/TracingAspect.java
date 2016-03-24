@@ -5,10 +5,7 @@ import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.SourceLocation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Aspect
 @SuppressWarnings("unused")
@@ -18,16 +15,39 @@ public class TracingAspect {
     private static List<TracingEvent> messages = new ArrayList<>();
 
 
-    @Pointcut("execution(public * acceptance.realworld..*.*(..))")
+    private static Map<Object, String> objectToCorrelationId = new HashMap<>();
+    private static ThreadLocal<String> correlationId;
+
+    @Pointcut("call(public acceptance.realworld.wiring.Wiring.new(java.lang.String))")
+    public void callToWiringConstructor() {}
+
+    @AfterReturning(pointcut = "callToWiringConstructor()")
+    public void afterWiring(final JoinPoint thisJoinPoint) {
+        Object[] args = thisJoinPoint.getArgs();
+        String arg = args[0].toString();
+
+        correlationId = ThreadLocal.withInitial(() -> arg);
+
+        objectToCorrelationId.put(thisJoinPoint.getTarget(), arg);
+        System.out.println("thisJoinPoint.getThis() = " + thisJoinPoint.getThis());
+        System.out.println("thisJoinPoint.getTarget() = " + thisJoinPoint.getTarget());
+        System.out.println("thisJoinPoint.getArgs() = " + Arrays.deepToString(args));
+        print(thisJoinPoint);
+
+    }
+
+    @Pointcut("call(public * acceptance.realworld..*.*(..))")
     public void callFromDomainToDomain() {}
 
     @Before("callFromDomainToDomain()")
     public void before(final JoinPoint thisJoinPoint) {
         print(thisJoinPoint);
+        thisJoinPoint.getThis();
+        thisJoinPoint.getTarget();
         traceEntry(getThis(thisJoinPoint), getTarget(thisJoinPoint), thisJoinPoint.getSignature(), thisJoinPoint.getSourceLocation(), thisJoinPoint.getArgs());
     }
 
-    private void traceEntry(final Class<? extends Object> aThis, final Class<? extends Object> target, final Signature signature, final SourceLocation sourceLocation, final Object[] args) {
+    private void traceEntry(final Class<?> aThis, final Class<?> target, final Signature signature, final SourceLocation sourceLocation, final Object[] args) {
         if(aThis != null && target != null) {
             String message = aThis.getName() + " -> " + target.getName() + " : " + signature.getName() + "(" + Arrays.deepToString(args) + ")";
             messages.add(new TracingEvent(TraceType.ENTRY, aThis, target, signature, sourceLocation, args));
@@ -40,7 +60,7 @@ public class TracingAspect {
         traceExit(getThis(thisJoinPoint), getTarget(thisJoinPoint), thisJoinPoint.getSignature(), thisJoinPoint.getSourceLocation(), o);
     }
 
-    private void traceExit(final Class<? extends Object> aThis, final Class<? extends Object> target, final Signature signature, final SourceLocation sourceLocation, final Object... returnValue) {
+    private void traceExit(final Class<?> aThis, final Class<?> target, final Signature signature, final SourceLocation sourceLocation, final Object... returnValue) {
         if(aThis != null && target != null) {
             String message = target.getName() + " -> " + aThis.getName() + " : return" + "(" + Arrays.deepToString(returnValue) + ")";
             messages.add(new TracingEvent(TraceType.EXIT, aThis, target, signature, sourceLocation, returnValue));
@@ -53,7 +73,7 @@ public class TracingAspect {
         traceThrowing(getThis(thisJoinPoint), getTarget(thisJoinPoint), thisJoinPoint.getSignature(), thisJoinPoint.getSourceLocation(), t);
     }
 
-    private void traceThrowing(final Class<? extends Object> aThis, final Class<? extends Object> target, final Signature signature, final SourceLocation sourceLocation, final Throwable throwable) {
+    private void traceThrowing(final Class<?> aThis, final Class<?> target, final Signature signature, final SourceLocation sourceLocation, final Throwable throwable) {
         if(aThis != null && target != null) {
             String message = target.getName() + " -> " + aThis.getName() + " : throws" + "(" + throwable + ")";
             messages.add(new TracingEvent(TraceType.EXCEPTION, aThis, target, signature, sourceLocation, throwable));

@@ -11,6 +11,12 @@ import acceptance.realworld.userinterface.httpserver.HttpServerBuilder;
 
 public class Wiring {
 
+    private final String correlationId;
+
+    public Wiring(String correlationId) {
+        this.correlationId = correlationId;
+    }
+
     public PacRequestRepository repository() {
         return new PretendPacRequestRepository();
     }
@@ -25,5 +31,9 @@ public class Wiring {
 
     private HttpClientFactory httpClientFactory() {
         return new HttpClientFactoryImplementation();
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
     }
 }
