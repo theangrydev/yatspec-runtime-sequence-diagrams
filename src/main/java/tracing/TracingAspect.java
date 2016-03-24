@@ -15,7 +15,7 @@ public class TracingAspect {
     private static List<TracingEvent> messages = new ArrayList<>();
 
 
-    private static Map<Object, String> objectToCorrelationId = new HashMap<>();
+    private static WeakHashMap<Object, String> objectToCorrelationId = new WeakHashMap<>();
     private static ThreadLocal<String> correlationId;
 
     @Pointcut("call(public acceptance.realworld.wiring.Wiring.new(java.lang.String))")
@@ -24,11 +24,10 @@ public class TracingAspect {
     @AfterReturning(pointcut = "callToWiringConstructor()")
     public void afterWiring(final JoinPoint thisJoinPoint) {
         Object[] args = thisJoinPoint.getArgs();
-        String arg = args[0].toString();
+        String correlationId = args[0].toString();
 
-        correlationId = ThreadLocal.withInitial(() -> arg);
+        objectToCorrelationId.put(thisJoinPoint.getThis(), correlationId);
 
-        objectToCorrelationId.put(thisJoinPoint.getTarget(), arg);
         System.out.println("thisJoinPoint.getThis() = " + thisJoinPoint.getThis());
         System.out.println("thisJoinPoint.getTarget() = " + thisJoinPoint.getTarget());
         System.out.println("thisJoinPoint.getArgs() = " + Arrays.deepToString(args));
@@ -36,11 +35,33 @@ public class TracingAspect {
 
     }
 
+    /**
+     * B b = new B();
+     * x() {
+     *  A a = new A("1234"); //  {a -> "1234"}
+     *  b.something(); // {a -> "1234", b -> "1234"}
+     *  c.something();
+     *
+     *  new Thread();
+     * }
+     *
+     * something {
+     *     d.foo(); //
+     * }
+     *
+     *
+     */
+
     @Pointcut("call(public * acceptance.realworld..*.*(..))")
     public void callFromDomainToDomain() {}
 
     @Before("callFromDomainToDomain()")
     public void before(final JoinPoint thisJoinPoint) {
+        String correlationId = objectToCorrelationId.get(thisJoinPoint.getThis());
+        objectToCorrelationId.put(thisJoinPoint.getTarget(), correlationId);
+
+        System.out.println("correlationId = " + correlationId);
+
         print(thisJoinPoint);
         thisJoinPoint.getThis();
         thisJoinPoint.getTarget();
