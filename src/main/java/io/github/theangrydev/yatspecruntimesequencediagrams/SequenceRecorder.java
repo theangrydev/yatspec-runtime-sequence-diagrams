@@ -18,21 +18,23 @@ import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
 
 public class SequenceRecorder extends SecurityManager {
 
-    private static final String TARGET_PACKAGE = "io";
-
+    private final String tracePrefix;
+    private final String targetPackage;
     private final CapturedInputAndOutputs capturedInputAndOutputs;
 
     private Instrumentation instrumentation;
     private ClassFileTransformer classFileTransformer;
 
-    public SequenceRecorder(CapturedInputAndOutputs capturedInputAndOutputs) {
+    public SequenceRecorder(String tracePrefix, String targetPackage, CapturedInputAndOutputs capturedInputAndOutputs) {
+        this.tracePrefix = tracePrefix;
+        this.targetPackage = targetPackage;
         this.capturedInputAndOutputs = capturedInputAndOutputs;
     }
 
     public void traceMethodCalls() {
         instrumentation = ByteBuddyAgent.install();
         classFileTransformer = new AgentBuilder.Default()
-                .type(nameStartsWith(TARGET_PACKAGE))
+                .type(nameStartsWith(targetPackage))
                 .transform(interceptor())
                 .installOnByteBuddyAgent();
     }
@@ -52,16 +54,16 @@ public class SequenceRecorder extends SecurityManager {
     public Object intercept(@This Object object, @Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> actualMethodCall) throws Exception {
         Class<?> callingClass = callingClass();
         Class<?> declaringClass = method.getDeclaringClass();
-        if (!callingClass.getName().startsWith(TARGET_PACKAGE) || !declaringClass.getName().startsWith(TARGET_PACKAGE)) {
+        if (!callingClass.getName().startsWith(targetPackage) || !declaringClass.getName().startsWith(targetPackage)) {
             return actualMethodCall.call();
         }
         String from = callingClass.getSimpleName();
         String to = declaringClass.getSimpleName();
-        String incomingMethodCall = method.getName() + " from " + from + " to " + to;
+        String incomingMethodCall = tracePrefix + method.getName() + " from " + from + " to " + to;
         capturedInputAndOutputs.add(incomingMethodCall, Arrays.toString(allArguments));
 
         Object result = actualMethodCall.call();
-        String resultOfMethodCall = method.getName() + " result from " + to + " to " + from;
+        String resultOfMethodCall = tracePrefix + method.getName() + " result from " + to + " to " + from;
         capturedInputAndOutputs.add(resultOfMethodCall, result);
         return result;
     }
