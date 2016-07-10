@@ -24,9 +24,8 @@ import static com.googlecode.yatspec.plugin.sequencediagram.SequenceDiagramGener
 public class SequenceRecorderTest extends TestState implements WithCustomResultListeners {
 
     private static final boolean TRACE_METHOD_CALLS = true;
-    private static final String TRACE_PREFIX = "Trace";
 
-    private final SequenceRecorder sequenceRecorder = new SequenceRecorder(TRACE_PREFIX, "io.github.theangrydev", capturedInputAndOutputs);
+    private final SequenceRecorder sequenceRecorder = new SequenceRecorder("io.github.theangrydev", capturedInputAndOutputs);
 
     @Before
     public void setUp() {
@@ -39,41 +38,14 @@ public class SequenceRecorderTest extends TestState implements WithCustomResultL
     @After
     public void generateSequenceDiagram() {
         if (!TRACE_METHOD_CALLS) {
+            addSequenceDiagram(capturedInputAndOutputs, "Sequence Diagram");
             return;
         }
-        CapturedInputAndOutputs traces = callTraces();
-        CapturedInputAndOutputs withoutCallTraces = withoutCallTraces();
-        removeTracePrefixes();
+        CapturedInputAndOutputs traces = sequenceRecorder.callTraces();
+        CapturedInputAndOutputs notCallTraces = sequenceRecorder.notCallTraces();
+        addSequenceDiagram(notCallTraces, "Sequence Diagram");
         addSequenceDiagram(traces, "Call Trace");
-        addSequenceDiagram(withoutCallTraces, "Sequence Diagram");
         sequenceRecorder.stopTracingMethodCalls();
-    }
-
-    private void removeTracePrefixes() {
-        for (String key : capturedInputAndOutputs.getTypes().keySet()) {
-            if (!key.startsWith(TRACE_PREFIX)) {
-                continue;
-            }
-            String value = capturedInputAndOutputs.getType(key, String.class);
-            capturedInputAndOutputs.remove(key);
-            capturedInputAndOutputs.add(key.substring(TRACE_PREFIX.length()), value);
-        }
-    }
-
-    private CapturedInputAndOutputs withoutCallTraces() {
-        CapturedInputAndOutputs withoutCallTraces = new CapturedInputAndOutputs();
-        capturedInputAndOutputs.getTypes().entrySet().stream()
-                .filter(entry -> !entry.getKey().startsWith(TRACE_PREFIX))
-                .forEach(entry -> withoutCallTraces.add(entry.getKey(), entry.getValue()));
-        return withoutCallTraces;
-    }
-
-    private CapturedInputAndOutputs callTraces() {
-        CapturedInputAndOutputs traces = new CapturedInputAndOutputs();
-        capturedInputAndOutputs.getTypes().entrySet().stream()
-                .filter(entry -> entry.getKey().startsWith(TRACE_PREFIX))
-                .forEach(entry -> traces.add(entry.getKey().substring(TRACE_PREFIX.length()), entry.getValue()));
-        return traces;
     }
 
     private void addSequenceDiagram(CapturedInputAndOutputs traces, String name) {

@@ -18,15 +18,15 @@ import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
 
 public class SequenceRecorder extends SecurityManager {
 
-    private final String tracePrefix;
+    private static final String TRACE_PREFIX = "Trace";
+
     private final String targetPackage;
     private final CapturedInputAndOutputs capturedInputAndOutputs;
 
     private Instrumentation instrumentation;
     private ClassFileTransformer classFileTransformer;
 
-    public SequenceRecorder(String tracePrefix, String targetPackage, CapturedInputAndOutputs capturedInputAndOutputs) {
-        this.tracePrefix = tracePrefix;
+    public SequenceRecorder(String targetPackage, CapturedInputAndOutputs capturedInputAndOutputs) {
         this.targetPackage = targetPackage;
         this.capturedInputAndOutputs = capturedInputAndOutputs;
     }
@@ -39,8 +39,36 @@ public class SequenceRecorder extends SecurityManager {
                 .installOnByteBuddyAgent();
     }
 
+    public CapturedInputAndOutputs notCallTraces() {
+        CapturedInputAndOutputs withoutCallTraces = new CapturedInputAndOutputs();
+        capturedInputAndOutputs.getTypes().entrySet().stream()
+                .filter(entry -> !entry.getKey().startsWith(TRACE_PREFIX))
+                .forEach(entry -> withoutCallTraces.add(entry.getKey(), entry.getValue()));
+        return withoutCallTraces;
+    }
+
+    public CapturedInputAndOutputs callTraces() {
+        CapturedInputAndOutputs traces = new CapturedInputAndOutputs();
+        capturedInputAndOutputs.getTypes().entrySet().stream()
+                .filter(entry -> entry.getKey().startsWith(TRACE_PREFIX))
+                .forEach(entry -> traces.add(entry.getKey().substring(TRACE_PREFIX.length()), entry.getValue()));
+        return traces;
+    }
+
     public void stopTracingMethodCalls() {
         instrumentation.removeTransformer(classFileTransformer);
+        removeTracePrefixes();
+    }
+
+    private void removeTracePrefixes() {
+        for (String key : capturedInputAndOutputs.getTypes().keySet()) {
+            if (!key.startsWith(TRACE_PREFIX)) {
+                continue;
+            }
+            String value = capturedInputAndOutputs.getType(key, String.class);
+            capturedInputAndOutputs.remove(key);
+            capturedInputAndOutputs.add(key.substring(TRACE_PREFIX.length()), value);
+        }
     }
 
     private AgentBuilder.Transformer interceptor() {
@@ -59,16 +87,16 @@ public class SequenceRecorder extends SecurityManager {
         }
         String from = callingClass.getSimpleName();
         String to = declaringClass.getSimpleName();
-        String incomingMethodCall = tracePrefix + method.getName() + " from " + from + " to " + to;
+        String incomingMethodCall = TRACE_PREFIX + method.getName() + " from " + from + " to " + to;
         capturedInputAndOutputs.add(incomingMethodCall, Arrays.toString(allArguments));
 
         Object result = actualMethodCall.call();
-        String resultOfMethodCall = tracePrefix + method.getName() + " result from " + to + " to " + from;
+        String resultOfMethodCall = TRACE_PREFIX + method.getName() + " result from " + to + " to " + from;
         capturedInputAndOutputs.add(resultOfMethodCall, result);
         return result;
     }
 
-    public Class<?> callingClass() {
+    private Class<?> callingClass() {
         return getClassContext()[3];
     }
 }

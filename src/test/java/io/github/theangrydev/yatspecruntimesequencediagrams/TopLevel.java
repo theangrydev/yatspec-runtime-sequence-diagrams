@@ -10,6 +10,7 @@ public class TopLevel {
     }
 
     private void two() {
-        nextLevel.foo("asdasd");
+        String asdasd = nextLevel.foo("asdasd");
+        System.out.println("asdasd = " + asdasd);
     }
 }
