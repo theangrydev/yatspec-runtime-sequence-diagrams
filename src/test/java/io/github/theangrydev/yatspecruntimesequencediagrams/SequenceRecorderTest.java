@@ -11,6 +11,7 @@ import com.googlecode.yatspec.rendering.html.DontHighlightRenderer;
 import com.googlecode.yatspec.rendering.html.HtmlResultRenderer;
 import com.googlecode.yatspec.state.givenwhenthen.TestState;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -21,19 +22,24 @@ import static com.googlecode.yatspec.plugin.sequencediagram.SequenceDiagramGener
 @RunWith(SpecRunner.class)
 public class SequenceRecorderTest extends TestState implements WithCustomResultListeners {
 
-    public SequenceDiagramGenerator sequenceDiagramGenerator = new SequenceDiagramGenerator();
+    private final SequenceRecorder sequenceRecorder = new SequenceRecorder(capturedInputAndOutputs);
+    private final SequenceDiagramGenerator sequenceDiagramGenerator = new SequenceDiagramGenerator();
+
+    @Before
+    public void setUp() {
+        sequenceRecorder.traceMethodCalls();
+    }
 
     @After
     public void generateSequenceDiagram() {
         Iterable<SequenceDiagramMessage> messages = new ByNamingConventionMessageProducer().messages(capturedInputAndOutputs);
         capturedInputAndOutputs.add("Sequence Diagram", sequenceDiagramGenerator.generateSequenceDiagram(messages));
+
+        sequenceRecorder.stopTracingMethodCalls();
     }
 
     @Test
     public void records() {
-        SequenceRecorder sequenceRecorder = new SequenceRecorder(capturedInputAndOutputs);
-        sequenceRecorder.traceMethodCalls();
-
         new TopLevel().test();
     }
 

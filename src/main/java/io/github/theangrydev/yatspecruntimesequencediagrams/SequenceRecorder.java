@@ -7,11 +7,12 @@ import net.bytebuddy.description.ModifierReviewable;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.*;
 
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-import static net.bytebuddy.matcher.ElementMatchers.*;
 import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
 
 
@@ -21,16 +22,23 @@ public class SequenceRecorder extends SecurityManager {
 
     private final CapturedInputAndOutputs capturedInputAndOutputs;
 
+    private Instrumentation instrumentation;
+    private ClassFileTransformer classFileTransformer;
+
     public SequenceRecorder(CapturedInputAndOutputs capturedInputAndOutputs) {
         this.capturedInputAndOutputs = capturedInputAndOutputs;
     }
 
     public void traceMethodCalls() {
-        ByteBuddyAgent.install();
-        new AgentBuilder.Default()
+        instrumentation = ByteBuddyAgent.install();
+        classFileTransformer = new AgentBuilder.Default()
                 .type(nameStartsWith(TARGET_PACKAGE))
                 .transform(interceptor())
                 .installOnByteBuddyAgent();
+    }
+
+    public void stopTracingMethodCalls() {
+        instrumentation.removeTransformer(classFileTransformer);
     }
 
     private AgentBuilder.Transformer interceptor() {
