@@ -22,16 +22,24 @@ import static com.googlecode.yatspec.plugin.sequencediagram.SequenceDiagramGener
 @RunWith(SpecRunner.class)
 public class SequenceRecorderTest extends TestState implements WithCustomResultListeners {
 
+    private static final boolean TRACE_METHOD_CALLS = true;
+
     private final SequenceRecorder sequenceRecorder = new SequenceRecorder(capturedInputAndOutputs);
     private final SequenceDiagramGenerator sequenceDiagramGenerator = new SequenceDiagramGenerator();
 
     @Before
     public void setUp() {
+        if (!TRACE_METHOD_CALLS) {
+            return;
+        }
         sequenceRecorder.traceMethodCalls();
     }
 
     @After
     public void generateSequenceDiagram() {
+        if (!TRACE_METHOD_CALLS) {
+            return;
+        }
         Iterable<SequenceDiagramMessage> messages = new ByNamingConventionMessageProducer().messages(capturedInputAndOutputs);
         capturedInputAndOutputs.add("Sequence Diagram", sequenceDiagramGenerator.generateSequenceDiagram(messages));
 
